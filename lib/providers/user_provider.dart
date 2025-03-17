@@ -15,7 +15,6 @@ class UserProvider with ChangeNotifier {
 
   final ApiService _apiService = ApiService();
 
-  /// Fetches all users and updates the state.
   Future<void> fetchUsers() async {
     _updateState(isLoading: true, error: null);
     try {
@@ -26,50 +25,38 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  /// Fetches a single user by ID and sets it as the selected user.
   Future<void> fetchUser(int id) async {
     _updateState(isLoading: true, error: null);
     try {
       _selectedUser = await _apiService.fetchUser(id);
       _updateState(isLoading: false);
     } catch (e) {
-      _selectedUser = null; // Reset on failure
+      _selectedUser = null;
       _updateState(isLoading: false, error: e.toString());
     }
   }
 
-  /// Updates a user and refreshes both the list and selected user.
   Future<void> updateUser(User user) async {
-    if (user.id <= 0) throw ArgumentError('Invalid user ID');
+    if (user.id == null) throw Exception('User ID cannot be null for update');
     _updateState(isLoading: true, error: null);
     try {
-      final updatedUser = await _apiService.updateUser(user.id, user);
+      final updatedUser = await _apiService.updateUser(user.id!, user);
       final index = _users.indexWhere((u) => u.id == user.id);
       if (index != -1) {
-        _users[index] = updatedUser; // Update local list
+        _users[index] = updatedUser;
       } else {
-        _users.add(updatedUser); // Add if not already in list
+        _users.add(updatedUser);
       }
-      _selectedUser = updatedUser; // Update selected user
+      _selectedUser = updatedUser;
       _updateState(isLoading: false);
     } catch (e) {
       _updateState(isLoading: false, error: e.toString());
     }
   }
 
-  /// Centralized state update method to reduce boilerplate and ensure consistency.
   void _updateState({bool? isLoading, String? error}) {
     _isLoading = isLoading ?? _isLoading;
     _error = error ?? _error;
-    notifyListeners();
-  }
-
-  /// Clears all state (e.g., for logout or reset).
-  void reset() {
-    _users = [];
-    _selectedUser = null;
-    _isLoading = false;
-    _error = null;
     notifyListeners();
   }
 }

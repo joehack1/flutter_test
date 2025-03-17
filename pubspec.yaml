@@ -1,39 +1,23 @@
 name: frontend_test
 description: "A Flutter app for the Frontend Developer Test, implementing user browsing and editing with API integration."
-publish_to: 'none' # Prevents accidental publishing to pub.dev
+publish_to: 'none'
 
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.2 # Compatible with modern Flutter versions
+  sdk: ^3.7.2
 
 dependencies:
   flutter:
     sdk: flutter
-  # Core UI and functionality
-  cupertino_icons: ^1.0.8 # Default icons for iOS-style widgets
-  # State management and networking
-  http: ^1.3.0 # HTTP client for API calls
-  provider: ^6.1.2 # State management with ChangeNotifier
-  # Optional: Model comparison for cleaner state updates
-  equatable: ^2.0.5 # Simplifies object equality checks in User model
+  cupertino_icons: ^1.0.8
+  http: ^1.3.0
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0 # Recommended lints for code quality
+  flutter_lints: ^5.0.0
 
 flutter:
-  uses-material-design: true # Enables Material Design icons and widgets
-
-  # Optional: Add assets for future enhancements (e.g., custom icons or images)
-  # assets:
-  #   - assets/images/
-
-  # Optional: Add custom fonts for UI polish
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: fonts/Roboto-Regular.ttf
-  #       - asset: fonts/Roboto-Bold.ttf
-  #         weight: 700
+  uses-material-design: true

@@ -1,12 +1,12 @@
 class User {
-  final int id;
+  final int? id; // Nullable to handle API nulls
   final String name;
   final String email;
   final String occupation;
   final String bio;
 
   User({
-    required this.id,
+    this.id,
     required this.name,
     required this.email,
     required this.occupation,
@@ -15,18 +15,19 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      occupation: json['occupation'],
-      bio: json['bio'],
+      id: json['id'] as int?, // Safely handle null
+      name: json['name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      occupation: json['occupation'] as String? ?? '',
+      bio: json['bio'] as String? ?? '',
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'email': email,
-        'occupation': occupation,
-        'bio': bio,
-      };
+    if (id != null) 'id': id,
+    'name': name,
+    'email': email,
+    'occupation': occupation,
+    'bio': bio,
+  };
 }

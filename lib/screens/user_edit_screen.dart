@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/user.dart';
 import '../providers/user_provider.dart';
+import '../models/user.dart';
 
 class UserEditScreen extends StatefulWidget {
   final int userId;
-
-  UserEditScreen({required this.userId});
+  const UserEditScreen({super.key, required this.userId});
 
   @override
   _UserEditScreenState createState() => _UserEditScreenState();
@@ -18,16 +17,21 @@ class _UserEditScreenState extends State<UserEditScreen> {
   late TextEditingController _emailController;
   late TextEditingController _occupationController;
   late TextEditingController _bioController;
+  bool _isInit = false;
 
   @override
   void initState() {
     super.initState();
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userProvider.fetchUser(widget.userId);
     _nameController = TextEditingController();
     _emailController = TextEditingController();
     _occupationController = TextEditingController();
     _bioController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).fetchUser(widget.userId);
+    });
   }
 
   @override
@@ -41,68 +45,126 @@ class _UserEditScreenState extends State<UserEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        if (!_isInit && userProvider.selectedUser != null) {
+          final user = userProvider.selectedUser!;
+          _nameController.text = user.name;
+          _emailController.text = user.email;
+          _occupationController.text = user.occupation;
+          _bioController.text = user.bio;
+          _isInit = true;
+        }
 
-    if (userProvider.selectedUser != null && _nameController.text.isEmpty) {
-      final user = userProvider.selectedUser!;
-      _nameController.text = user.name;
-      _emailController.text = user.email;
-      _occupationController.text = user.occupation;
-      _bioController.text = user.bio;
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: Text('Edit User')),
-      body: userProvider.isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(labelText: 'Name'),
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
+        return Scaffold(
+          appBar: AppBar(title: const Text('Edit User')),
+          body:
+              userProvider.isLoading && userProvider.selectedUser == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Name',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator:
+                                (value) => value!.isEmpty ? 'Required' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _emailController,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator:
+                                (value) => value!.isEmpty ? 'Required' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _occupationController,
+                            decoration: const InputDecoration(
+                              labelText: 'Occupation',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator:
+                                (value) => value!.isEmpty ? 'Required' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _bioController,
+                            decoration: const InputDecoration(
+                              labelText: 'Bio',
+                              border: OutlineInputBorder(),
+                            ),
+                            maxLines: 3,
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed:
+                                userProvider.isLoading
+                                    ? null
+                                    : () {
+                                      if (_formKey.currentState!.validate()) {
+                                        final updatedUser = User(
+                                          id: widget.userId,
+                                          name: _nameController.text,
+                                          email: _emailController.text,
+                                          occupation:
+                                              _occupationController.text,
+                                          bio: _bioController.text,
+                                        );
+                                        userProvider.updateUser(updatedUser).then(
+                                          (_) {
+                                            if (userProvider.error == null) {
+                                              Navigator.pop(context);
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'User updated successfully',
+                                                  ),
+                                                ),
+                                              );
+                                            } else {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    userProvider.error!,
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                        );
+                                      }
+                                    },
+                            child:
+                                userProvider.isLoading
+                                    ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                    : const Text('Save'),
+                          ),
+                        ],
+                      ),
                     ),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: InputDecoration(labelText: 'Email'),
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
-                    ),
-                    TextFormField(
-                      controller: _occupationController,
-                      decoration: InputDecoration(labelText: 'Occupation'),
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
-                    ),
-                    TextFormField(
-                      controller: _bioController,
-                      decoration: InputDecoration(labelText: 'Bio'),
-                      maxLines: 3,
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          final updatedUser = User(
-                            id: widget.userId,
-                            name: _nameController.text,
-                            email: _emailController.text,
-                            occupation: _occupationController.text,
-                            bio: _bioController.text,
-                          );
-                          userProvider.updateUser(updatedUser).then((_) {
-                            Navigator.pop(context);
-                          });
-                        }
-                      },
-                      child: Text('Save'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
+        );
+      },
     );
   }
 }

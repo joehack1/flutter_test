@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import 'user_edit_screen.dart';
+import 'dart:developer' as dev; // For logging
 
 class UserListScreen extends StatefulWidget {
   const UserListScreen({super.key});
@@ -14,7 +15,6 @@ class _UserListScreenState extends State<UserListScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch users on initial load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<UserProvider>(context, listen: false).fetchUsers();
     });
@@ -25,11 +25,12 @@ class _UserListScreenState extends State<UserListScreen> {
     return Consumer<UserProvider>(
       builder: (context, userProvider, child) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Users'), elevation: 2),
+          appBar: AppBar(title: const Text('Users')),
           body: _buildBody(userProvider),
           floatingActionButton: FloatingActionButton(
             onPressed:
                 userProvider.isLoading ? null : () => userProvider.fetchUsers(),
+            tooltip: 'Refresh',
             child:
                 userProvider.isLoading
                     ? const SizedBox(
@@ -51,15 +52,20 @@ class _UserListScreenState extends State<UserListScreen> {
     if (userProvider.isLoading && userProvider.users.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
-
+    if (userProvider.error != null) {
+      return Center(child: Text('Error: ${userProvider.error}'));
+    }
     if (userProvider.users.isEmpty) {
       return const Center(
-        child: Text(
-          'No users found. Tap refresh to try again.',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-        ),
+        child: Text('No users found. Tap refresh to try again.'),
       );
     }
+
+    // Log user data for debugging
+    dev.log(
+      'Users loaded: ${userProvider.users.map((u) => 'ID: ${u.id}, Name: ${u.name}').join(', ')}',
+      name: 'UserListScreen',
+    );
 
     return RefreshIndicator(
       onRefresh: userProvider.fetchUsers,
@@ -76,14 +82,28 @@ class _UserListScreenState extends State<UserListScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(user.occupation),
-              trailing: const Icon(Icons.edit, color: Colors.blue),
+              trailing:
+                  user.id != null
+                      ? const Icon(Icons.edit, color: Colors.blue)
+                      : const Icon(
+                        Icons.error,
+                        color: Colors.red,
+                      ), // Visual cue for null ID
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UserEditScreen(userId: user.id),
-                  ),
-                );
+                if (user.id != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserEditScreen(userId: user.id!),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Cannot edit user: ID is missing'),
+                    ),
+                  );
+                }
               },
             ),
           );
