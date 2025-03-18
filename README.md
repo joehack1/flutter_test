@@ -11,8 +11,8 @@ A Flutter-based mobile and web application for managing users, featuring a user 
 - Responsive UI with loading states and error handling.
 
 ## Screenshots
-![Screenshot 1](s1.png)
-![Screenshot 2](s2.png)
+![Screenshot 1](s1.PNG)
+![Screenshot 2](s2.PNG)
 
 ## Getting Started
 
