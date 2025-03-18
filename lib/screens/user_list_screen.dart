@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import 'user_edit_screen.dart';
-import 'dart:developer' as dev; // For logging
 
 class UserListScreen extends StatefulWidget {
   const UserListScreen({super.key});
@@ -15,9 +14,7 @@ class _UserListScreenState extends State<UserListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<UserProvider>(context, listen: false).fetchUsers();
-    });
+    Provider.of<UserProvider>(context, listen: false).fetchUsers();
   }
 
   @override
@@ -25,24 +22,38 @@ class _UserListScreenState extends State<UserListScreen> {
     return Consumer<UserProvider>(
       builder: (context, userProvider, child) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Users')),
+          appBar: AppBar(
+            title: const Text('User Directory'),
+            elevation: 0,
+            backgroundColor: Colors.blueAccent,
+            foregroundColor: Colors.white,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed:
+                    userProvider.isLoading
+                        ? null
+                        : () => userProvider.fetchUsers(),
+                tooltip: 'Refresh',
+              ),
+            ],
+          ),
           body: _buildBody(userProvider),
-          floatingActionButton: FloatingActionButton(
-            onPressed:
-                userProvider.isLoading ? null : () => userProvider.fetchUsers(),
-            tooltip: 'Refresh',
-            child:
-                userProvider.isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
+          floatingActionButton:
+              userProvider.isLoading
+                  ? const FloatingActionButton(
+                    onPressed: null,
+                    backgroundColor: Colors.grey,
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
-                    )
-                    : const Icon(Icons.refresh),
-          ),
+                    ),
+                  )
+                  : null,
         );
       },
     );
@@ -50,61 +61,126 @@ class _UserListScreenState extends State<UserListScreen> {
 
   Widget _buildBody(UserProvider userProvider) {
     if (userProvider.isLoading && userProvider.users.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.blueAccent),
+      );
     }
     if (userProvider.error != null) {
-      return Center(child: Text('Error: ${userProvider.error}'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              userProvider.error!,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
     }
     if (userProvider.users.isEmpty) {
-      return const Center(
-        child: Text('No users found. Tap refresh to try again.'),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.people_alt_outlined, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              'No users found',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => userProvider.fetchUsers(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    // Log user data for debugging
-    dev.log(
-      'Users loaded: ${userProvider.users.map((u) => 'ID: ${u.id}, Name: ${u.name}').join(', ')}',
-      name: 'UserListScreen',
-    );
-
     return RefreshIndicator(
       onRefresh: userProvider.fetchUsers,
-      child: ListView.separated(
+      color: Colors.blueAccent,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16.0),
         itemCount: userProvider.users.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final user = userProvider.users[index];
           return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            elevation: 2,
+            margin: const EdgeInsets.only(bottom: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              leading: CircleAvatar(
+                backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                child: Text(
+                  user.name[0].toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               title: Text(
                 user.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              subtitle: Text(user.occupation),
-              trailing:
-                  user.id != null
-                      ? const Icon(Icons.edit, color: Colors.blue)
-                      : const Icon(
-                        Icons.error,
-                        color: Colors.red,
-                      ), // Visual cue for null ID
-              onTap: () {
-                if (user.id != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UserEditScreen(userId: user.id!),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cannot edit user: ID is missing'),
-                    ),
-                  );
-                }
-              },
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Text(
+                    user.occupation,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    user.email,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                onPressed: () {
+                  if (user.id != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserEditScreen(userId: user.id!),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Cannot edit: User ID is missing'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+              ),
             ),
           );
         },

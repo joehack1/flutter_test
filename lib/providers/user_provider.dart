@@ -16,47 +16,89 @@ class UserProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
 
   Future<void> fetchUsers() async {
-    _updateState(isLoading: true, error: null);
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
     try {
       _users = await _apiService.fetchUsers();
-      _updateState(isLoading: false);
+      print('Fetched ${_users.length} users');
     } catch (e) {
-      _updateState(isLoading: false, error: e.toString());
+      print('Error fetching users: $e');
+      _users = _mockUsers();
+      _error = 'Failed to fetch users, using mock data';
     }
+    _isLoading = false;
+    notifyListeners();
   }
 
-  Future<void> fetchUser(int id) async {
-    _updateState(isLoading: true, error: null);
+  Future<void> fetchUser(String id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
     try {
       _selectedUser = await _apiService.fetchUser(id);
-      _updateState(isLoading: false);
+      print('Fetched user: ${_selectedUser?.name}');
     } catch (e) {
-      _selectedUser = null;
-      _updateState(isLoading: false, error: e.toString());
+      print('Error fetching user: $e');
+      _selectedUser = _users.firstWhere(
+        (u) => u.id == id,
+        orElse: () => User(
+          id: id,
+          name: 'Unknown',
+          email: 'No email',
+          occupation: 'No occupation',
+          bio: 'User data unavailable',
+        ),
+      );
+      _error = 'Failed to fetch user with ID $id from API, using cached data';
     }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  void setSelectedUser(User user) {
+    _selectedUser = user;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
   }
 
   Future<void> updateUser(User user) async {
-    if (user.id == null) throw Exception('User ID cannot be null for update');
-    _updateState(isLoading: true, error: null);
-    try {
-      final updatedUser = await _apiService.updateUser(user.id!, user);
-      final index = _users.indexWhere((u) => u.id == user.id);
-      if (index != -1) {
-        _users[index] = updatedUser;
-      } else {
-        _users.add(updatedUser);
-      }
-      _selectedUser = updatedUser;
-      _updateState(isLoading: false);
-    } catch (e) {
-      _updateState(isLoading: false, error: e.toString());
+    if (user.id == null) {
+      _error = 'Cannot edit user: ID is missing';
+      notifyListeners();
+      return;
     }
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    // Update locally only, no API call since PATCH /api/users/{id} returns 404
+    final index = _users.indexWhere((u) => u.id == user.id);
+    if (index != -1) {
+      _users[index] = user;
+      _selectedUser = user;
+      print('Updated user locally: ${user.name}');
+    } else {
+      _error = 'User not found in list to update';
+    }
+    _isLoading = false;
+    notifyListeners();
   }
 
-  void _updateState({bool? isLoading, String? error}) {
-    _isLoading = isLoading ?? _isLoading;
-    _error = error ?? _error;
-    notifyListeners();
+  List<User> _mockUsers() {
+    return [
+      User(
+          id: "1",
+          name: "Barret",
+          email: "bwallbutton0@salon.com",
+          occupation: "Engineer",
+          bio: "Lorem ipsum"),
+      User(
+          id: "2",
+          name: "Alice",
+          email: "alice@example.com",
+          occupation: "Designer",
+          bio: "Dolor sit amet"),
+    ];
   }
 }

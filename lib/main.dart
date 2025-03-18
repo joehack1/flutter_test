@@ -4,12 +4,7 @@ import 'providers/user_provider.dart';
 import 'screens/user_list_screen.dart';
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => UserProvider(),
-      child: const MyApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -17,14 +12,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Frontend Test',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        primarySwatch: Colors.blue,
-        cardTheme: const CardTheme(elevation: 2),
+    return ChangeNotifierProvider(
+      create: (_) => UserProvider(),
+      child: MaterialApp(
+        title: 'Frontend Test',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: const UserListScreen(),
       ),
-      home: const UserListScreen(),
     );
   }
 }
